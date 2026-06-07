@@ -1,0 +1,5 @@
+ALTER TABLE public.rooms
+    DROP COLUMN IF EXISTS city,
+    DROP COLUMN IF EXISTS address,
+    DROP COLUMN IF EXISTS lat,
+    DROP COLUMN IF EXISTS lon;

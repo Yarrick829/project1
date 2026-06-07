@@ -1,6 +1,9 @@
 package container
 
 import (
+	"log"
+	"net/http"
+
 	"github.com/BohdanBoriak/boilerplate-go-back/config"
 	"github.com/BohdanBoriak/boilerplate-go-back/internal/app"
 	"github.com/BohdanBoriak/boilerplate-go-back/internal/infra/database"
@@ -9,8 +12,6 @@ import (
 	"github.com/go-chi/jwtauth/v5"
 	"github.com/upper/db/v4"
 	"github.com/upper/db/v4/adapter/postgresql"
-	"log"
-	"net/http"
 )
 
 type Container struct {
@@ -26,11 +27,21 @@ type Middlewares struct {
 type Services struct {
 	app.AuthService
 	app.UserService
+	app.OrganizationService
+	app.RoomService
+	app.DeviceService
+	app.MeasurementService
+	app.EventService
 }
 
 type Controllers struct {
-	AuthController controllers.AuthController
-	UserController controllers.UserController
+	AuthController         controllers.AuthController
+	UserController         controllers.UserController
+	OrganizationController controllers.OrganizationController
+	RoomController         controllers.RoomController
+	DeviceController       controllers.DeviceController
+	MeasurementController  controllers.MeasurementController
+	EventController        controllers.EventController
 }
 
 func New(conf config.Configuration) Container {
@@ -39,12 +50,27 @@ func New(conf config.Configuration) Container {
 
 	sessionRepository := database.NewSessRepository(sess)
 	userRepository := database.NewUserRepository(sess)
+	organizationRepository := database.NewOrganizationRepository(sess)
+	roomRepository := database.NewRoomRepository(sess)
+	deviceRepository := database.NewDeviceRepository(sess)
+	measurementRepository := database.NewMeasurementRepository(sess)
+	eventRepository := database.NewEventRepository(sess)
 
 	userService := app.NewUserService(userRepository)
 	authService := app.NewAuthService(sessionRepository, userRepository, tknAuth, conf.JwtTTL)
+	organizationService := app.NewOrganizationService(organizationRepository, roomRepository)
+	roomService := app.NewRoomService(roomRepository, deviceRepository)
+	deviceService := app.NewDeviceService(deviceRepository, measurementRepository)
+	measurementService := app.NewMeasurementService(measurementRepository)
+	eventService := app.NewEventService(eventRepository)
 
 	authController := controllers.NewAuthController(authService, userService)
 	userController := controllers.NewUserController(userService, authService)
+	organizationController := controllers.NewOrganizationController(organizationService)
+	roomController := controllers.NewRoomController(roomService)
+	deviceController := controllers.NewDeviceController(deviceService)
+	measurementController := controllers.NewMeasurementController(measurementService)
+	eventController := controllers.NewEventController(eventService)
 
 	authMiddleware := middlewares.AuthMiddleware(tknAuth, authService, userService)
 
@@ -55,10 +81,20 @@ func New(conf config.Configuration) Container {
 		Services: Services{
 			authService,
 			userService,
+			organizationService,
+			roomService,
+			deviceService,
+			measurementService,
+			eventService,
 		},
 		Controllers: Controllers{
 			authController,
 			userController,
+			organizationController,
+			roomController,
+			deviceController,
+			measurementController,
+			eventController,
 		},
 	}
 }
