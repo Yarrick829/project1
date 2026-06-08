@@ -7,6 +7,7 @@ import (
 
 	"github.com/BohdanBoriak/boilerplate-go-back/internal/app"
 	"github.com/BohdanBoriak/boilerplate-go-back/internal/domain"
+	"github.com/BohdanBoriak/boilerplate-go-back/internal/infra/database"
 	"github.com/BohdanBoriak/boilerplate-go-back/internal/infra/http/requests"
 	"github.com/BohdanBoriak/boilerplate-go-back/internal/infra/http/resources"
 )
@@ -136,7 +137,6 @@ func (mc MeasurementController) Delete() http.HandlerFunc {
 		noContent(w)
 	}
 }
-
 func (mc MeasurementController) FindList() http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 
@@ -154,7 +154,40 @@ func (mc MeasurementController) FindList() http.HandlerFunc {
 			return
 		}
 
-		measurements, err := mc.MeasurementService.FindList(device.Id)
+		if device.RoomId == nil {
+			BadRequest(w, errors.New("device room id is required"))
+			return
+		}
+
+		page := r.URL.Query().Get("page")
+		countPerPage := r.URL.Query().Get("count_per_page")
+
+		paginationRaw, err := requests.PaginationRequest{
+			Page:         page,
+			CountPerPage: countPerPage,
+		}.ToDomainModel()
+
+		if err != nil {
+			log.Printf(
+				"MeasurementController.FindList(PaginationRequest.ToDomainModel): %s",
+				err,
+			)
+			BadRequest(w, err)
+			return
+		}
+
+		pagination := paginationRaw.(domain.Pagination)
+
+		filters := database.MeasurementFilters{
+			DeviceId: device.Id,
+			RoomId:   *device.RoomId,
+		}
+
+		measurements, err := mc.MeasurementService.FindList(
+			pagination,
+			filters,
+		)
+
 		if err != nil {
 			log.Printf(
 				"MeasurementController.FindList(mc.MeasurementService.FindList): %s",
@@ -166,7 +199,9 @@ func (mc MeasurementController) FindList() http.HandlerFunc {
 
 		Success(
 			w,
-			resources.MeasurementDto{}.DomainToDtoCollection(measurements),
+			resources.MeasurementDto{}.DomainPaginationToDto(
+				measurements,
+			),
 		)
 	}
 }

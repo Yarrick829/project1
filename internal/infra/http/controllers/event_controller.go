@@ -7,6 +7,7 @@ import (
 
 	"github.com/BohdanBoriak/boilerplate-go-back/internal/app"
 	"github.com/BohdanBoriak/boilerplate-go-back/internal/domain"
+	"github.com/BohdanBoriak/boilerplate-go-back/internal/infra/database"
 	"github.com/BohdanBoriak/boilerplate-go-back/internal/infra/http/requests"
 	"github.com/BohdanBoriak/boilerplate-go-back/internal/infra/http/resources"
 )
@@ -148,15 +149,37 @@ func (ec EventController) FindList() http.HandlerFunc {
 			return
 		}
 
-		events, err := ec.EventService.FindList(device.Id)
+		if org.Id != device.OrganizationId {
+			Forbidden(w, errors.New("access denied"))
+			return
+		}
+
+		pagination := domain.Pagination{
+			Page:         1,
+			CountPerPage: 20,
+		}
+
+		filters := database.EventFilters{
+			DeviceId: device.Id,
+		}
+
+		events, err := ec.EventService.FindList(
+			pagination,
+			filters,
+		)
+
 		if err != nil {
+			log.Printf(
+				"EventController.FindList(ec.EventService.FindList): %s",
+				err,
+			)
 			InternalServerError(w, err)
 			return
 		}
 
 		Success(
 			w,
-			resources.EventDto{}.DomainToDtoCollection(events),
+			resources.EventsDto{}.DomainPaginationToDto(events),
 		)
 	}
 }

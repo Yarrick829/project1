@@ -14,6 +14,12 @@ type MeasurementDto struct {
 	CreatedDate time.Time `json:"created_date"`
 }
 
+type MeasurementsDto struct {
+	Items []MeasurementDto `json:"items"`
+	Total uint64           `json:"total"`
+	Pages uint             `json:"pages"`
+}
+
 func (md MeasurementDto) DomainToDto(m domain.Measurement) MeasurementDto {
 	return MeasurementDto{
 		Id:          m.Id,
@@ -32,4 +38,15 @@ func (md MeasurementDto) DomainToDtoCollection(ms []domain.Measurement) []Measur
 	}
 
 	return msDto
+}
+
+func (md MeasurementDto) DomainPaginationToDto(
+	ms domain.Measurements,
+) MeasurementsDto {
+
+	return MeasurementsDto{
+		Items: md.DomainToDtoCollection(ms.Items),
+		Total: ms.Total,
+		Pages: ms.Pages,
+	}
 }

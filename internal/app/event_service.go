@@ -17,7 +17,7 @@ type EventService interface {
 	Update(e domain.Event) (domain.Event, error)
 	Delete(id uint64) error
 	Find(eId uint64) (interface{}, error)
-	FindList(deviceId uint64) ([]domain.Event, error)
+	FindList(p domain.Pagination, ef database.EventFilters) (domain.Events, error)
 }
 
 func NewEventService(er database.EventRepository) EventService {
@@ -104,11 +104,17 @@ func (es eventService) validateEvent(e domain.Event) error {
 	}
 }
 
-func (es eventService) FindList(deviceId uint64) ([]domain.Event, error) {
+func (es eventService) FindList(p domain.Pagination, ef database.EventFilters) (domain.Events, error) {
 
-	events, err := es.eventRepo.FindByDeviceId(deviceId)
+	events, err := es.eventRepo.FindList(p, ef)
+
 	if err != nil {
-		return nil, err
+		log.Printf(
+			"eventService.FindList(es.eventRepo.FindList): %s",
+			err,
+		)
+
+		return domain.Events{}, err
 	}
 
 	return events, nil

@@ -14,6 +14,12 @@ type EventDto struct {
 	CreatedDate time.Time          `json:"created_date"`
 }
 
+type EventsDto struct {
+	Items []EventDto `json:"items"`
+	Total uint64     `json:"total"`
+	Pages uint       `json:"pages"`
+}
+
 func (ed EventDto) DomainToDto(e domain.Event) EventDto {
 	return EventDto{
 		Id:          e.Id,
@@ -32,4 +38,13 @@ func (ed EventDto) DomainToDtoCollection(events []domain.Event) []EventDto {
 	}
 
 	return result
+}
+
+func (ed EventsDto) DomainPaginationToDto(es domain.Events) EventsDto {
+
+	return EventsDto{
+		Items: EventDto{}.DomainToDtoCollection(es.Items),
+		Total: es.Total,
+		Pages: es.Pages,
+	}
 }

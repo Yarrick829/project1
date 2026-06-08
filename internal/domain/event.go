@@ -12,6 +12,12 @@ type Event struct {
 	DeletedDate *time.Time
 }
 
+type Events struct {
+	Items []Event
+	Total uint64
+	Pages uint
+}
+
 type EventAction string
 
 const (

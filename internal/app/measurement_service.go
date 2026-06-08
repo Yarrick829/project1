@@ -17,7 +17,7 @@ type MeasurementService interface {
 	Update(m domain.Measurement) (domain.Measurement, error)
 	Delete(id uint64) error
 	Find(mId uint64) (interface{}, error)
-	FindList(deviceId uint64) ([]domain.Measurement, error)
+	FindList(p domain.Pagination, mf database.MeasurementFilters) (domain.Measurements, error)
 }
 
 func NewMeasurementService(mr database.MeasurementRepository) MeasurementService {
@@ -95,15 +95,16 @@ func (ms measurementService) validateMeasurement(m domain.Measurement) error {
 	return nil
 }
 
-func (ms measurementService) FindList(deviceId uint64) ([]domain.Measurement, error) {
+func (ms measurementService) FindList(p domain.Pagination, mf database.MeasurementFilters) (domain.Measurements, error) {
 
-	measurements, err := ms.measurementRepo.FindByDeviceId(deviceId)
+	measurements, err := ms.measurementRepo.FindList(p, mf)
+
 	if err != nil {
 		log.Printf(
-			"measurementService.FindList(ms.measurementRepo.FindByDeviceId): %s",
+			"measurementService.FindList(ms.measurementRepo.FindList): %s",
 			err,
 		)
-		return nil, err
+		return domain.Measurements{}, err
 	}
 
 	return measurements, nil
